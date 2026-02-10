@@ -32,19 +32,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- CONFIGURACIÓN DEL FRONTEND ---
-# 1. Montar archivos estáticos (JS, CSS, Imágenes)
-# Esto permite que el navegador encuentre los recursos dentro de la carpeta /frontend
-if os.path.exists("frontend"):
-    app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
+# --- CONFIGURACIÓN DEL FRONTEND (MODIFICADA) ---
 
-# 2. Ruta raíz para cargar el index.html automáticamente
+# 1. Montar la carpeta de 'assets' generada por Vite (JS y CSS)
+# Esta es la clave para que la pantalla deje de estar en blanco
+# El navegador pide /assets/index-....js y aquí le decimos dónde buscarlo.
+if os.path.exists("frontend/dist/assets"):
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+
+# 2. Ruta raíz para cargar el index.html de la carpeta 'dist'
 @app.get("/")
 async def read_index():
-    index_path = os.path.join("frontend", "index.html")
+    # Buscamos el index.html en la carpeta de producción (dist)
+    index_path = os.path.join("frontend", "dist", "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    # Si no existe index.html, redirige a la documentación para evitar el error "Not Found"
+    # Si no encuentra el archivo, redirige a la documentación
     return RedirectResponse(url="/docs")
 
 # --- DEPENDENCIAS ---
@@ -108,8 +111,8 @@ def generate_pdf(delivery_id, user, items, delivery_date):
     width, height = letter
     
     # --- Header ---
-    # Nota: He mantenido tu lógica de logo, pero recuerda que en Render 
-    # la ruta debe ser relativa al servidor, ej: "frontend/logo.png"
+    # Nota: Si tu logo está dentro de dist/assets, deberías actualizar esta ruta si quieres que salga en el PDF.
+    # Por ahora lo dejamos apuntando a frontend/logo.png si existe en el repo original.
     logo_path = "frontend/logo.png" 
     
     if os.path.exists(logo_path):
