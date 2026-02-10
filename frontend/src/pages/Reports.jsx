@@ -30,15 +30,16 @@ export function Reports() {
 
     const fetchReport = async () => {
         try {
-            setReportData([]); // Clear previous data
+            setReportData([]); // Limpiar datos previos
             const params = {};
             if (filters.dni) params.dni = filters.dni;
             if (filters.month) params.month = filters.month;
             if (filters.year) params.year = filters.year;
 
+            // CORRECCIÓN: Rutas relativas para que Render encuentre los endpoints
             const endpoint = activeTab === 'laundry'
-                ? 'http://localhost:8000/api/laundry/report'
-                : 'http://localhost:8000/api/delivery/report';
+                ? '/api/laundry/report'
+                : '/api/delivery/report';
 
             const res = await axios.get(endpoint, { params });
             setReportData(res.data);
@@ -49,7 +50,7 @@ export function Reports() {
 
     useEffect(() => {
         fetchReport();
-    }, [activeTab]); // Fetch on tab change and initial load
+    }, [activeTab]); // Se dispara al cambiar de pestaña o carga inicial
 
     const handleFilterChange = (e) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -142,7 +143,6 @@ export function Reports() {
 
             <Card className="overflow-hidden">
                 <div className="overflow-x-auto">
-                    {/* Dynamic Table based on Active Tab */}
                     {activeTab === 'laundry' ? (
                         <table className="w-full text-left text-sm text-slate-600">
                             <thead className="text-xs uppercase bg-slate-100 text-slate-700">
@@ -169,12 +169,12 @@ export function Reports() {
                                             <td className="px-6 py-4">{row.dni}</td>
                                             <td className="px-6 py-4">{row.items}</td>
                                             <td className="px-6 py-4">
-                                                {new Date(row.request_date).toLocaleDateString()} {new Date(row.request_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(row.request_date).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {row.return_date === '-' || row.return_date.startsWith('Parcial')
                                                     ? row.return_date
-                                                    : new Date(row.return_date).toLocaleDateString() + ' ' + new Date(row.return_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                    : new Date(row.return_date).toLocaleDateString()
                                                 }
                                             </td>
                                             <td className="px-6 py-4">
@@ -222,7 +222,7 @@ export function Reports() {
                                             </td>
                                             <td className="px-6 py-4 font-medium text-slate-800">{row.items}</td>
                                             <td className="px-6 py-4">
-                                                {new Date(row.date).toLocaleDateString()} {new Date(row.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(row.date).toLocaleDateString()}
                                             </td>
                                         </tr>
                                     ))
