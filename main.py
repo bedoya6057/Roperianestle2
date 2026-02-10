@@ -32,22 +32,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- CONFIGURACIÓN DEL FRONTEND (MODIFICADA) ---
+# --- CONFIGURACIÓN DEL FRONTEND ---
 
 # 1. Montar la carpeta de 'assets' generada por Vite (JS y CSS)
-# Esta es la clave para que la pantalla deje de estar en blanco
-# El navegador pide /assets/index-....js y aquí le decimos dónde buscarlo.
 if os.path.exists("frontend/dist/assets"):
     app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
 # 2. Ruta raíz para cargar el index.html de la carpeta 'dist'
 @app.get("/")
 async def read_index():
-    # Buscamos el index.html en la carpeta de producción (dist)
     index_path = os.path.join("frontend", "dist", "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    # Si no encuentra el archivo, redirige a la documentación
     return RedirectResponse(url="/docs")
 
 # --- DEPENDENCIAS ---
@@ -111,8 +107,6 @@ def generate_pdf(delivery_id, user, items, delivery_date):
     width, height = letter
     
     # --- Header ---
-    # Nota: Si tu logo está dentro de dist/assets, deberías actualizar esta ruta si quieres que salga en el PDF.
-    # Por ahora lo dejamos apuntando a frontend/logo.png si existe en el repo original.
     logo_path = "frontend/logo.png" 
     
     if os.path.exists(logo_path):
@@ -430,3 +424,20 @@ def get_delivery_report(dni: str = None, month: int = None, year: int = None, db
         report_data.append({"id": rec.id, "user": f"{user.name} {user.surname}", "dni": rec.dni, "contract_type": user.contract_type, "items": items_str, "date": rec.date.isoformat(), "sort_date": rec.date})
     report_data.sort(key=lambda x: x['sort_date'], reverse=True)
     return report_data
+
+# --- CATCH-ALL PARA REACT ROUTER (ESTO VA AL FINAL DEL ARCHIVO) ---
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    # 1. Si intentan entrar a una API que no existe, devolvemos 404 real
+    if full_path.startswith("api"):
+         raise HTTPException(status_code=404, detail="API Endpoint not found")
+    
+    # 2. Si intentan pedir un archivo de assets que no existe, 404 real
+    if full_path.startswith("assets") or full_path.startswith("frontend"):
+         raise HTTPException(status_code=404, detail="File not found")
+
+    # 3. Para todo lo demás (/login, /register, etc.), devolvemos la App de React
+    index_path = os.path.join("frontend", "dist", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return RedirectResponse(url="/docs")
