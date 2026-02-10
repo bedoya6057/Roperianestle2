@@ -34,11 +34,11 @@ app.add_middleware(
 
 # --- CONFIGURACIÓN DEL FRONTEND ---
 
-# 1. Montar la carpeta de 'assets' generada por Vite (JS y CSS)
+# 1. Montar la carpeta de 'assets' generada por Vite
 if os.path.exists("frontend/dist/assets"):
     app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
-# 2. Ruta raíz para cargar el index.html de la carpeta 'dist'
+# 2. Ruta raíz para cargar el index.html de producción
 @app.get("/")
 async def read_index():
     index_path = os.path.join("frontend", "dist", "index.html")
@@ -106,8 +106,9 @@ def generate_pdf(delivery_id, user, items, delivery_date):
     c = canvas.Canvas(filepath, pagesize=letter)
     width, height = letter
     
-    # --- Header ---
-    logo_path = "frontend/logo.png" 
+    # --- LOGO EN MINÚSCULAS ---
+    # Ruta corregida para buscar el logo en la carpeta de assets
+    logo_path = "frontend/src/assets/logo.png" 
     
     if os.path.exists(logo_path):
         try:
@@ -425,18 +426,18 @@ def get_delivery_report(dni: str = None, month: int = None, year: int = None, db
     report_data.sort(key=lambda x: x['sort_date'], reverse=True)
     return report_data
 
-# --- CATCH-ALL PARA REACT ROUTER (ESTO VA AL FINAL DEL ARCHIVO) ---
+# --- CATCH-ALL PARA REACT ROUTER ---
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str):
-    # 1. Si intentan entrar a una API que no existe, devolvemos 404 real
+    # Si la ruta comienza con api, dejamos que FastAPI maneje el 404
     if full_path.startswith("api"):
          raise HTTPException(status_code=404, detail="API Endpoint not found")
     
-    # 2. Si intentan pedir un archivo de assets que no existe, 404 real
+    # Si es un archivo estático que no existe
     if full_path.startswith("assets") or full_path.startswith("frontend"):
          raise HTTPException(status_code=404, detail="File not found")
 
-    # 3. Para todo lo demás (/login, /register, etc.), devolvemos la App de React
+    # Para todo lo demás (rutas de React), entregamos el index.html
     index_path = os.path.join("frontend", "dist", "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
