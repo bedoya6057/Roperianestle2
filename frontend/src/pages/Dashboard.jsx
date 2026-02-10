@@ -16,10 +16,11 @@ export function Dashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const resStats = await axios.get('http://localhost:8000/api/stats');
+                // CORRECCIÓN: Rutas relativas para producción en Render
+                const resStats = await axios.get('/api/stats');
                 setStats(resStats.data);
 
-                const resLaundry = await axios.get('http://localhost:8000/api/laundry');
+                const resLaundry = await axios.get('/api/laundry');
                 setLaundryServices(resLaundry.data);
             } catch (err) {
                 console.error("Error fetching data:", err);
@@ -28,6 +29,7 @@ export function Dashboard() {
 
         fetchStats();
     }, []);
+
     return (
         <div className="space-y-6">
             <h2 className="text-3xl font-bold text-slate-800">Dashboard</h2>
