@@ -12,8 +12,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import clsx from 'clsx';
 import { AnimatePresence } from 'framer-motion';
 
-// --- IMPORTACIÓN DEL LOGO CORREGIDA ---
-// Al estar este archivo en src/ y el logo en src/assets/
+// --- IMPORTACIÓN DEL LOGO EN MINÚSCULAS ---
 import logo from './assets/logo.png'; 
 
 function NavLink({ to, icon: Icon, children }) {
@@ -43,7 +42,7 @@ function Sidebar() {
     <div className="w-64 bg-slate-900 border-r border-slate-800 h-screen flex flex-col fixed left-0 top-0 z-40">
       <div className="p-6 border-b border-slate-800 flex justify-center">
         <div className="bg-white/95 p-3 rounded-xl shadow-lg w-full flex justify-center items-center">
-          {/* USANDO LA VARIABLE IMPORTADA */}
+          {/* Se utiliza la variable 'logo' que importa el archivo en minúsculas */}
           <img src={logo} alt="Sodexo Logo" className="h-16 w-auto object-contain" />
         </div>
       </div>
