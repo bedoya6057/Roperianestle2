@@ -20,17 +20,18 @@ export function Reports() {
             let params = {};
 
             if (activeTab === 'deliveries') {
-                url = 'http://localhost:8000/api/reports/deliveries';
+                // CORRECCIÓN: Ruta relativa para reportes de entregas
+                url = '/api/delivery/report'; 
                 params = { month, year };
             } else if (activeTab === 'laundry') {
-                url = 'http://localhost:8000/api/reports/laundry';
-                // If we want to filter by guide, we pass it. If empty, maybe get all?
-                // The backend for laundry report might support guide_number
+                // CORRECCIÓN: Ruta relativa para reportes de lavandería
+                url = '/api/reports/laundry';
                 if (guideFilter.trim()) {
                     params = { guide_number: guideFilter.trim() };
                 }
             } else if (activeTab === 'uniform-return') {
-                url = 'http://localhost:8000/api/uniform-returns/report';
+                // CORRECCIÓN: Ruta relativa para reportes de devolución (baja) de uniformes
+                url = '/api/uniform-returns/report';
             }
 
             if (url) {
@@ -186,7 +187,7 @@ export function Reports() {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {reportData.length === 0 ? (
-                                    <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-500">Ingrese un N° de Guía para buscar (o deje vacío para ver todos).</td></tr>
+                                    <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Ingrese un N° de Guía para buscar (o deje vacío para ver todos).</td></tr>
                                 ) : (
                                     reportData.map((row) => (
                                         <tr key={row.id} className="hover:bg-slate-50 transition-colors">
@@ -195,7 +196,7 @@ export function Reports() {
                                             <td className="px-6 py-4">{row.items}</td>
                                             <td className="px-6 py-4 text-orange-600 font-medium">{row.pending_items}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.status === 'Completa' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.status === 'Completa' || row.status === 'Completado' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                                                     }`}>
                                                     {row.status}
                                                 </span>
