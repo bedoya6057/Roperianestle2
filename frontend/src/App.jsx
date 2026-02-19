@@ -1,17 +1,19 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { LayoutDashboard, UserPlus, Package, Shirt, RefreshCw, FileText, Users, LogOut } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
 import { Register } from './pages/Register';
 import { Delivery } from './pages/Delivery';
 import { Laundry } from './pages/Laundry';
-import { UniformReturn } from './pages/UniformReturn';
-
+import { LaundryReturn } from './pages/LaundryReturn';
 import { Reports } from './pages/Reports';
 import { Login } from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import clsx from 'clsx';
 import { AnimatePresence } from 'framer-motion';
+
+// --- IMPORTACIÓN CON NOMBRE EN MINÚSCULAS ---
+import logo from './assets/logo.png'; 
 
 function NavLink({ to, icon: Icon, children }) {
   const location = useLocation();
@@ -40,7 +42,8 @@ function Sidebar() {
     <div className="w-64 bg-slate-900 border-r border-slate-800 h-screen flex flex-col fixed left-0 top-0 z-40">
       <div className="p-6 border-b border-slate-800 flex justify-center">
         <div className="bg-white/95 p-3 rounded-xl shadow-lg w-full flex justify-center items-center">
-          <img src="/logo.png" alt="Sodexo Logo" className="h-16 w-auto object-contain" />
+          {/* Uso de la variable importada */}
+          <img src={logo} alt="Sodexo Logo" className="h-16 w-auto object-contain" />
         </div>
       </div>
 
@@ -48,9 +51,8 @@ function Sidebar() {
         <NavLink to="/" icon={LayoutDashboard}>Dashboard</NavLink>
         <NavLink to="/register" icon={UserPlus}>Registrar Usuario</NavLink>
         <NavLink to="/delivery" icon={Package}>Entregar Uniformes</NavLink>
-        <NavLink to="/uniform-return" icon={Package}>Devolución Uniformes</NavLink>
         <NavLink to="/laundry" icon={Shirt}>Lavandería (Envío)</NavLink>
-
+        <NavLink to="/laundry-return" icon={RefreshCw}>Entregar Lavado</NavLink>
         <NavLink to="/reportes" icon={FileText}>Reportes</NavLink>
       </nav>
 
@@ -88,7 +90,9 @@ function DashboardLayout({ children }) {
           </h1>
         </header>
         <main className="flex-1 p-8 overflow-auto">
-          {children}
+          <AnimatePresence mode='wait'>
+            {children}
+          </AnimatePresence>
         </main>
       </div>
     </div>
@@ -101,18 +105,17 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-
           <Route path="/*" element={
             <ProtectedRoute>
               <DashboardLayout>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/delivery" element={<Delivery />} />
-                  <Route path="/uniform-return" element={<UniformReturn />} />
-                  <Route path="/laundry" element={<Laundry />} />
-
-                  <Route path="/reportes" element={<Reports />} />
+                  <Route index element={<Dashboard />} />
+                  <Route path="register" element={<Register />} />
+                  <Route path="delivery" element={<Delivery />} />
+                  <Route path="laundry" element={<Laundry />} />
+                  <Route path="laundry-return" element={<LaundryReturn />} />
+                  <Route path="reportes" element={<Reports />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </DashboardLayout>
             </ProtectedRoute>

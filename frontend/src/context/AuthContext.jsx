@@ -15,12 +15,7 @@ export function AuthProvider({ children }) {
         // Check local storage for existing session
         const storedUser = localStorage.getItem('roperia_user');
         if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse user from local storage", e);
-                localStorage.removeItem('roperia_user');
-            }
+            setUser(JSON.parse(storedUser));
         }
         setLoading(false);
     }, []);

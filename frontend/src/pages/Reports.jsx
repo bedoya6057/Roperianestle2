@@ -30,18 +30,16 @@ export function Reports() {
 
     const fetchReport = async () => {
         try {
-            setReportData([]); // Clear previous data
+            setReportData([]); // Limpiar datos previos
             const params = {};
-            if (activeTab === 'laundry' && filters.guide) params.guide = filters.guide.trim();
-            if ((activeTab === 'delivery' || activeTab === 'uniform-return') && filters.dni) params.dni = filters.dni;
-
+            if (filters.dni) params.dni = filters.dni;
             if (filters.month) params.month = filters.month;
             if (filters.year) params.year = filters.year;
 
-            let endpoint = '';
-            if (activeTab === 'laundry') endpoint = 'http://localhost:8000/api/laundry/report';
-            else if (activeTab === 'delivery') endpoint = 'http://localhost:8000/api/delivery/report';
-            else if (activeTab === 'uniform-return') endpoint = 'http://localhost:8000/api/uniform-returns/report';
+            // CORRECCIÓN: Rutas relativas para que Render encuentre los endpoints
+            const endpoint = activeTab === 'laundry'
+                ? '/api/laundry/report'
+                : '/api/delivery/report';
 
             const res = await axios.get(endpoint, { params });
             setReportData(res.data);
@@ -52,7 +50,7 @@ export function Reports() {
 
     useEffect(() => {
         fetchReport();
-    }, [activeTab]); // Fetch on tab change and initial load
+    }, [activeTab]); // Se dispara al cambiar de pestaña o carga inicial
 
     const handleFilterChange = (e) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -70,8 +68,8 @@ export function Reports() {
                 <button
                     onClick={() => setActiveTab('laundry')}
                     className={`flex items-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'laundry'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
                     <Shirt size={18} />
@@ -80,58 +78,31 @@ export function Reports() {
                 <button
                     onClick={() => setActiveTab('delivery')}
                     className={`flex items-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'delivery'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
                     <Package size={18} />
                     Reporte Entregas Uniforme
                 </button>
-                <button
-                    onClick={() => setActiveTab('uniform-return')}
-                    className={`flex items-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'uniform-return'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-slate-500 hover:text-slate-700'
-                        }`}
-                >
-                    <Package size={18} className="transform rotate-180" />
-                    Devolución Uniformes
-                </button>
             </div>
 
             <Card className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    {activeTab === 'laundry' ? (
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">N° Guía</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    name="guide"
-                                    value={filters.guide || ''}
-                                    onChange={handleFilterChange}
-                                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Buscar por Guía..."
-                                />
-                                <Search className="absolute left-3 top-2.5 text-slate-400" size={20} />
-                            </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">DNI Usuario</label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                name="dni"
+                                value={filters.dni}
+                                onChange={handleFilterChange}
+                                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="Buscar por DNI..."
+                            />
+                            <Search className="absolute left-3 top-2.5 text-slate-400" size={20} />
                         </div>
-                    ) : (
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">DNI Usuario</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    name="dni"
-                                    value={filters.dni}
-                                    onChange={handleFilterChange}
-                                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Buscar por DNI..."
-                                />
-                                <Search className="absolute left-3 top-2.5 text-slate-400" size={20} />
-                            </div>
-                        </div>
-                    )}
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Mes</label>
                         <select
@@ -172,17 +143,16 @@ export function Reports() {
 
             <Card className="overflow-hidden">
                 <div className="overflow-x-auto">
-                    {/* Dynamic Table based on Active Tab */}
                     {activeTab === 'laundry' ? (
                         <table className="w-full text-left text-sm text-slate-600">
                             <thead className="text-xs uppercase bg-slate-100 text-slate-700">
                                 <tr>
-                                    <th className="px-6 py-4">N° Guía</th>
-                                    <th className="px-6 py-4">Fecha Envío</th>
-                                    <th className="px-6 py-4">Prendas Enviadas</th>
+                                    <th className="px-6 py-4">Usuario</th>
+                                    <th className="px-6 py-4">DNI</th>
+                                    <th className="px-6 py-4">Prendas</th>
+                                    <th className="px-6 py-4">Fecha Solicitud</th>
+                                    <th className="px-6 py-4">Fecha Entrega</th>
                                     <th className="px-6 py-4">Estado</th>
-                                    <th className="px-6 py-4">Observación / Faltantes</th>
-                                    <th className="px-6 py-4">Fecha Devolución</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -195,26 +165,27 @@ export function Reports() {
                                 ) : (
                                     reportData.map((row) => (
                                         <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-slate-900">{row.guide_number}</td>
-                                            <td className="px-6 py-4">
-                                                {new Date(row.send_date).toLocaleDateString()} {new Date(row.send_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </td>
+                                            <td className="px-6 py-4 font-medium text-slate-900">{row.user}</td>
+                                            <td className="px-6 py-4">{row.dni}</td>
                                             <td className="px-6 py-4">{row.items}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${(row.status || '').includes('Completo') ? 'bg-green-100 text-green-700' :
-                                                    (row.status || '').includes('Incompleto') ? 'bg-red-100 text-red-700' :
-                                                        'bg-blue-100 text-blue-700'
-                                                    }`}>
-                                                    {row.status || 'Desconocido'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-500 italic">
-                                                {row.observation}
+                                                {new Date(row.request_date).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4">
-                                                {row.return_date === '-' ? '-' :
-                                                    new Date(row.return_date).toLocaleDateString() + ' ' + new Date(row.return_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                {row.return_date === '-' || row.return_date.startsWith('Parcial')
+                                                    ? row.return_date
+                                                    : new Date(row.return_date).toLocaleDateString()
                                                 }
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.status === 'Entregado'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : row.status === 'Parcial'
+                                                            ? 'bg-orange-100 text-orange-700'
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                    {row.status}
+                                                </span>
                                             </td>
                                         </tr>
                                     ))
@@ -251,41 +222,8 @@ export function Reports() {
                                             </td>
                                             <td className="px-6 py-4 font-medium text-slate-800">{row.items}</td>
                                             <td className="px-6 py-4">
-                                                {new Date(row.date).toLocaleDateString()} {new Date(row.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(row.date).toLocaleDateString()}
                                             </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    )}
-
-                    {activeTab === 'uniform-return' && (
-                        <table className="w-full text-left text-sm text-slate-600">
-                            <thead className="text-xs uppercase bg-slate-100 text-slate-700">
-                                <tr>
-                                    <th className="px-6 py-4">Usuario</th>
-                                    <th className="px-6 py-4">DNI</th>
-                                    <th className="px-6 py-4">Fecha Devolución</th>
-                                    <th className="px-6 py-4">Items Devueltos</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {reportData.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="4" className="px-6 py-8 text-center text-slate-500">
-                                            No se encontraron registros.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    reportData.map((row) => (
-                                        <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-slate-900">{row.user}</td>
-                                            <td className="px-6 py-4">{row.dni}</td>
-                                            <td className="px-6 py-4">
-                                                {new Date(row.date).toLocaleDateString()} {new Date(row.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-slate-800">{row.items}</td>
                                         </tr>
                                     ))
                                 )}

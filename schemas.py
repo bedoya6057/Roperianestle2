@@ -36,8 +36,7 @@ class Delivery(DeliveryBase):
         orm_mode = True
 
 class LaundryBase(BaseModel):
-    guide_number: str
-    weight: float = 0
+    dni: str
 
 class LaundryCreate(LaundryBase):
     items: List[Item]
@@ -46,12 +45,11 @@ class Laundry(LaundryBase):
     id: int
     date: datetime
     items_json: str
-    status: str
     class Config:
         orm_mode = True
 
 class LaundryReturnBase(BaseModel):
-    guide_number: str
+    dni: str
 
 class LaundryReturnCreate(LaundryReturnBase):
     items: List[Item]
@@ -60,39 +58,18 @@ class LaundryReturn(LaundryReturnBase):
     id: int
     date: datetime
     items_json: str
-    status: str
-    observation: str
     class Config:
         orm_mode = True
 
-class UniformReturnBase(BaseModel):
-    dni: str
 
-class UniformReturnCreate(UniformReturnBase):
-    items: List[Item]
-    date: datetime
-
-class UniformReturn(UniformReturnBase):
-    id: int
-    date: datetime
-    items_json: str
-    class Config:
-        orm_mode = True
-
-class LaundryStatus(BaseModel):
-    name: str
-    sent: int
-    returned: int
-    pending: int
-
-class LaundryPendingItem(BaseModel):
-    name: str
-    qty: int
+class LaundryWithUser(Laundry):
+    user_name: str
+    user_surname: str
 
 class LaundryPendingUser(BaseModel):
-    dni: str | None
-    user_name: str | None
-    user_surname: str | None
-    pending_items: List[LaundryPendingItem]
+    dni: str
+    user_name: str
+    user_surname: str
+    pending_items: List[Item]
 
 
