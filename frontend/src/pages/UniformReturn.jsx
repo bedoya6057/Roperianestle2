@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Search, Plus, Save, Trash2, ArrowLeft } from 'lucide-react';
+import { Search, Plus, Save, Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 
 export function UniformReturn() {
@@ -12,7 +12,6 @@ export function UniformReturn() {
     const [success, setSuccess] = useState('');
 
     const ALLOWED_ITEMS = ["Polo", "Pantalon", "Chaqueta"];
-    // Default items to populate on search
     const DEFAULT_ITEMS = [
         { name: "Polo", qty: 1, fixed: true },
         { name: "Pantalon", qty: 1, fixed: true },
@@ -21,6 +20,8 @@ export function UniformReturn() {
 
     const searchUser = async (e) => {
         e.preventDefault();
+        if (!dni.trim()) return;
+
         setLoading(true);
         setError('');
         setUser(null);
@@ -28,12 +29,12 @@ export function UniformReturn() {
         setSuccess('');
 
         try {
-            const res = await axios.get(`http://localhost:8000/api/users/${dni}`);
+            // CORRECCIÓN: Ruta relativa para producción
+            const res = await axios.get(`/api/users/${dni.trim()}`);
             setUser(res.data);
-            // Pre-populate with default items
             setItems(DEFAULT_ITEMS);
         } catch (err) {
-            setError('Usuario no encontrado');
+            setError('Usuario no encontrado o error de conexión');
         } finally {
             setLoading(false);
         }
@@ -44,8 +45,7 @@ export function UniformReturn() {
     };
 
     const removeItem = (index) => {
-        const newItems = items.filter((_, i) => i !== index);
-        setItems(newItems);
+        setItems(items.filter((_, i) => i !== index));
     };
 
     const updateItem = (index, field, value) => {
@@ -61,19 +61,23 @@ export function UniformReturn() {
 
         const payload = {
             dni: user.dni,
-            items: items.map(i => ({ name: i.name, qty: parseInt(i.qty) })),
-            observations: ""
+            items: items.map(i => ({ 
+                name: i.name, 
+                qty: parseInt(i.qty) || 0 
+            })).filter(i => i.qty > 0), // Evita enviar cantidades en 0
+            observations: "Devolución regular de uniforme"
         };
 
         try {
-            await axios.post('http://localhost:8000/api/uniform-returns', payload);
-            setSuccess('Devolución registrada correctamente');
+            // CORRECCIÓN: Ruta relativa para producción
+            await axios.post('/api/uniform-returns', payload);
+            setSuccess('Devolución registrada correctamente en la base de datos');
             setDni('');
             setUser(null);
             setItems([]);
         } catch (err) {
             console.error(err);
-            setError('Error al registrar la devolución');
+            setError('Error al registrar la devolución en el servidor');
         } finally {
             setLoading(false);
         }
@@ -83,7 +87,6 @@ export function UniformReturn() {
         <div className="max-w-4xl mx-auto space-y-6">
             <h2 className="text-3xl font-bold text-slate-800">Devolución de Uniformes</h2>
 
-            {/* Search Section */}
             <Card className="p-6">
                 <form onSubmit={searchUser} className="flex gap-4">
                     <input
@@ -99,41 +102,27 @@ export function UniformReturn() {
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                     >
                         <Search size={20} />
-                        Buscar
+                        {loading ? 'Buscando...' : 'Buscar'}
                     </button>
                 </form>
 
-                {error && (
-                    <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg">
-                        {error}
-                    </div>
-                )}
-
-                {success && (
-                    <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-lg">
-                        {success}
-                    </div>
-                )}
+                {error && <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg">{error}</div>}
+                {success && <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-lg">{success}</div>}
             </Card>
 
-            {/* Return Form */}
             {user && (
                 <Card className="p-6 space-y-6">
                     <div className="border-b pb-4">
                         <h3 className="text-lg font-semibold text-slate-700">Datos del Trabajador</h3>
-                        <p className="text-slate-600">{user.name} {user.surname}</p>
-                        <p className="text-slate-500 text-sm">{user.position} - {user.area}</p>
+                        <p className="text-slate-600 font-medium">{user.name} {user.surname}</p>
+                        <p className="text-slate-500 text-sm">{user.dni}</p>
                     </div>
 
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
                             <h3 className="text-lg font-semibold text-slate-700">Items a Devolver</h3>
-                            <button
-                                onClick={addItem}
-                                className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                            >
-                                <Plus size={16} />
-                                Agregar Item
+                            <button onClick={addItem} className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
+                                <Plus size={16} /> Agregar Item
                             </button>
                         </div>
 
@@ -150,11 +139,9 @@ export function UniformReturn() {
                                             <select
                                                 value={item.name}
                                                 onChange={(e) => updateItem(index, 'name', e.target.value)}
-                                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                className="w-full px-4 py-2 border rounded-lg outline-none"
                                             >
-                                                {ALLOWED_ITEMS.map(opt => (
-                                                    <option key={opt} value={opt}>{opt}</option>
-                                                ))}
+                                                {ALLOWED_ITEMS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                             </select>
                                         )}
                                     </div>
@@ -165,14 +152,11 @@ export function UniformReturn() {
                                             min="1"
                                             value={item.qty}
                                             onChange={(e) => updateItem(index, 'qty', e.target.value)}
-                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                            className="w-full px-4 py-2 border rounded-lg outline-none"
                                         />
                                     </div>
                                     {!item.fixed && (
-                                        <button
-                                            onClick={() => removeItem(index)}
-                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                        >
+                                        <button onClick={() => removeItem(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                                             <Trash2 size={20} />
                                         </button>
                                     )}
@@ -185,10 +169,9 @@ export function UniformReturn() {
                         <button
                             onClick={handleSubmit}
                             disabled={loading || items.length === 0}
-                            className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 font-medium shadow-sm"
+                            className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium shadow-sm"
                         >
-                            <Save size={20} />
-                            Registrar Devolución
+                            {loading ? 'Registrando...' : 'Registrar Devolución'}
                         </button>
                     </div>
                 </Card>
