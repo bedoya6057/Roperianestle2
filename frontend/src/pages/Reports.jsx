@@ -1,153 +1,83 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Card } from '../components/ui/Card';
-import { Search, FileText, Filter, Package, Shirt, Truck } from 'lucide-react';
+from fastapi import FastAPI, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy import extract
+from database import SessionLocal, engine, Base
+import models, schemas
+from datetime import date, datetime
+import json
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import os
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib.utils import ImageReader
 
-export function Reports() {
-    const [activeTab, setActiveTab] = useState('deliveries');
-    const [reportData, setReportData] = useState([]);
-    const [guideFilter, setGuideFilter] = useState('');
-    const [month, setMonth] = useState(new Date().getMonth() + 1);
-    const [year, setYear] = useState(new Date().getFullYear());
-    const [loading, setLoading] = useState(false);
+# Configuración de directorios para PDFs
+PDF_DIR = "deliveries_pdf"
+os.makedirs(PDF_DIR, exist_ok=True)
 
-    useEffect(() => {
-        fetchReport();
-    }, [activeTab, month, year]);
+# Inicialización de Base de Datos
+models.Base.metadata.create_all(bind=engine)
 
-    const fetchReport = async () => {
-        setLoading(true);
-        try {
-            let url = '';
-            let params = {};
+app = FastAPI()
 
-            if (activeTab === 'deliveries') {
-                url = '/api/delivery/report'; 
-                params = { month: parseInt(month), year: parseInt(year) };
-            } else if (activeTab === 'laundry') {
-                url = '/api/reports/laundry';
-                if (guideFilter.trim()) {
-                    params = { guide_number: guideFilter.trim() };
-                }
-            } else if (activeTab === 'uniform-return') {
-                url = '/api/uniform-returns/report';
-            }
+# Configuración de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-            if (url) {
-                const res = await axios.get(url, { params });
-                // Validamos que sea un array antes de guardar
-                setReportData(Array.isArray(res.data) ? res.data : []);
-            }
-        } catch (err) {
-            console.error("Error cargando reporte:", err);
-            setReportData([]);
-        } finally {
-            setLoading(false);
-        }
-    };
+# --- DEPENDENCIAS ---
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-    return (
-        <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
-                <FileText className="text-blue-600" />
-                Reportes de Gestión
-            </h2>
+# --- RUTAS DE LA API: USUARIOS ---
 
-            {/* Selector de Pestañas */}
-            <div className="flex gap-4 border-b border-slate-200">
-                {[
-                    { id: 'deliveries', label: 'Entregas', icon: <Package size={18} /> },
-                    { id: 'laundry', label: 'Lavandería', icon: <Truck size={18} /> },
-                    { id: 'uniform-return', label: 'Bajas/Devoluciones', icon: <Shirt size={18} /> }
-                ].map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`pb-4 px-2 font-medium flex items-center gap-2 transition-all ${activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        {tab.icon} {tab.label}
-                    </button>
-                ))}
-            </div>
+@app.post("/api/users", response_model=schemas.User)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.dni == user.dni).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="DNI ya registrado")
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
 
-            {/* Filtros */}
-            <Card className="p-4 flex flex-wrap gap-4 items-center bg-white border border-slate-100 shadow-sm">
-                <div className="flex gap-2 items-center text-slate-600">
-                    <Filter size={20} />
-                    <span className="font-medium text-sm">Filtrar por:</span>
-                </div>
+@app.get("/api/users/{dni}", response_model=schemas.User)
+def read_user(dni: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.dni == dni).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return user
 
-                {activeTab === 'deliveries' && (
-                    <div className="flex gap-2">
-                        <select value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 border rounded-lg text-sm bg-white">
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('es-ES', { month: 'long' }).toUpperCase()}</option>
-                            ))}
-                        </select>
-                        <select value={year} onChange={(e) => setYear(e.target.value)} className="px-3 py-2 border rounded-lg text-sm bg-white">
-                            <option value="2025">2025</option>
-                            <option value="2026">2026</option>
-                        </select>
-                    </div>
-                )}
+# --- ENTREGAS Y GENERACIÓN DE PDF ---
 
-                {activeTab === 'laundry' && (
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="N° de Guía"
-                            value={guideFilter}
-                            onChange={(e) => setGuideFilter(e.target.value)}
-                            className="px-3 py-2 border rounded-lg text-sm w-48"
-                        />
-                        <button onClick={fetchReport} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Buscar</button>
-                    </div>
-                )}
-            </Card>
-
-            {/* Tabla Dinámica */}
-            <Card className="overflow-hidden border border-slate-200 shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600">
-                        <thead className="bg-slate-50 text-slate-700 font-semibold uppercase text-xs">
-                            <tr>
-                                <th className="px-6 py-4">Referencia / Usuario</th>
-                                <th className="px-6 py-4">DNI / Estado</th>
-                                <th className="px-6 py-4">Fecha Registro</th>
-                                <th className="px-6 py-4">Detalle de Items</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
-                            {loading ? (
-                                <tr><td colSpan="4" className="px-6 py-12 text-center text-slate-500 italic">Cargando datos desde la base de datos...</td></tr>
-                            ) : reportData.length === 0 ? (
-                                <tr><td colSpan="4" className="px-6 py-12 text-center text-slate-500 italic">No se encontraron registros para este periodo.</td></tr>
-                            ) : (
-                                reportData.map((row, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-900">
-                                            {row.user || row.guide_number || "Sin nombre"}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {activeTab === 'laundry' ? (
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${row.status === 'Completa' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                                    {row.status}
-                                                </span>
-                                            ) : (row.dni || "-")}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {row.date ? new Date(row.date).toLocaleDateString('es-PE') : "-"}
-                                        </td>
-                                        <td className="px-6 py-4 text-xs max-w-xs truncate">
-                                            {row.items || row.items_count || "Sin detalle"}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
-        </div>
-    );
-}
+def generate_pdf(delivery_id, user, items, delivery_date):
+    filename = f"delivery_{delivery_id}.pdf"
+    filepath = os.path.join(PDF_DIR, filename)
+    c = canvas.Canvas(filepath, pagesize=letter)
+    width, height = letter
+    
+    # Intento de cargar logo
+    logo_path = os.path.join("frontend", "src", "assets", "logo.png")
+    if os.path.exists(logo_path):
+        try:
+            logo = ImageReader(logo_path)
+            c.drawImage(logo, 40, height - 90, width=120, height=50, mask='auto', preserveAspectRatio=True)
+        except:
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(40, height - 70, "SODEXO")
+    
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(width / 2, height - 120, "
