@@ -3,15 +3,15 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import axios from 'axios';
-import { Search, RotateCcw, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { Search, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
 
 export function LaundryReturn() {
     const [guideNumber, setGuideNumber] = useState('');
-    const [laundryData, setLaundryData] = useState(null); // Data for valid guide
+    const [laundryData, setLaundryData] = useState(null); 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
-    const [returnItems, setReturnItems] = useState({}); // { "Item Name": qty_to_return }
+    const [returnItems, setReturnItems] = useState({}); 
 
     const searchGuide = async (e) => {
         e.preventDefault();
@@ -24,7 +24,6 @@ export function LaundryReturn() {
         setSuccess(false);
 
         try {
-            // CORRECCIÓN: Ruta relativa para buscar el estado de la guía en Render
             const res = await axios.get(`/api/laundry/${guideNumber.trim()}/status`);
             setLaundryData(res.data);
         } catch (err) {
@@ -57,14 +56,11 @@ export function LaundryReturn() {
 
         setLoading(true);
         try {
-            // CORRECCIÓN: Ruta relativa para registrar la devolución en Render
             await axios.post('/api/laundry/return', {
                 guide_number: guideNumber,
                 items: itemsToReturn
             });
             setSuccess(true);
-
-            // Refrescar estado usando ruta relativa
             const res = await axios.get(`/api/laundry/${guideNumber}/status`);
             setLaundryData(res.data);
             setReturnItems({});
