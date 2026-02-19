@@ -24,7 +24,8 @@ export function LaundryReturn() {
         setSuccess(false);
 
         try {
-            const res = await axios.get(`http://localhost:8000/api/laundry/${guideNumber.trim()}/status`);
+            // CORRECCIÓN: Ruta relativa para buscar el estado de la guía en Render
+            const res = await axios.get(`/api/laundry/${guideNumber.trim()}/status`);
             setLaundryData(res.data);
         } catch (err) {
             setError(err.response?.status === 404 ? 'Guía no encontrada' : 'Error al buscar guía');
@@ -56,14 +57,15 @@ export function LaundryReturn() {
 
         setLoading(true);
         try {
-            await axios.post('http://localhost:8000/api/laundry/return', {
+            // CORRECCIÓN: Ruta relativa para registrar la devolución en Render
+            await axios.post('/api/laundry/return', {
                 guide_number: guideNumber,
                 items: itemsToReturn
             });
             setSuccess(true);
 
-            // Refresh status
-            const res = await axios.get(`http://localhost:8000/api/laundry/${guideNumber}/status`);
+            // Refrescar estado usando ruta relativa
+            const res = await axios.get(`/api/laundry/${guideNumber}/status`);
             setLaundryData(res.data);
             setReturnItems({});
         } catch (err) {
